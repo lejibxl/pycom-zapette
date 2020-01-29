@@ -1,5 +1,5 @@
 import uos
-import CayenneLPPv2
+import zapette.CayenneLPPv2 as CayenneLPPv2
 import utime
 from network import LoRa
 import socket
