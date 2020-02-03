@@ -28,4 +28,4 @@ class ZapetteHandler(LoggingHandler):
         :param msg: The core message
 
         """
-        send_frame_TX(self.format(level, msg))
+        send_frame_TX(self.format(level,msg))
