@@ -1,6 +1,6 @@
 
 from logging.logging import LoggingHandler
-from zapette.zapette import send_frame_TX
+from zapette.zapette import Zapette
 
 class ZapetteHandler(LoggingHandler):
 
@@ -28,4 +28,4 @@ class ZapetteHandler(LoggingHandler):
         :param msg: The core message
 
         """
-        send_frame_TX(self.format(level,msg))
+        Zapette.send_frame_TX(self.format(level,msg))

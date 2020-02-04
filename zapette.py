@@ -6,11 +6,11 @@ import socket
 import ubinascii
 import struct
 import logging.logging as logging
-from zapette.zapette_handler import ZapetteHandler
+#from zapette.zapette_handler import ZapetteHandler
 l = logging.getLogger(__name__)
 class Zapette:
     def __init__(self, device_id, handler_rx=None, handler_tx=None ):
-        l.addHandler(ZapetteHandler("self"),2)
+        #.addHandler(ZapetteHandler("self"),2)
         l.debug("loraBlk init ...")
         self.device_id = bytes([device_id])
         self._user_handler_rx  = handler_rx
@@ -140,4 +140,6 @@ if __name__ == '__main__':
     zapette=Zapette(0x01,handler_rx=test_rx,handler_tx=test_tx)
     lpp=CayenneLPPv2.LPP()
     lpp.add_digital_input(0,1)
-    print(zapette.send_frame_TX(0x12, lpp))
+    print(zapette.send_frame_TX(0x01, lpp))
+    while True:
+        pass
