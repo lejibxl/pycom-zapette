@@ -12,26 +12,27 @@ LPP_DIGITAL_INPUT            = 0     # 1 byte
 LPP_DIGITAL_OUTPUT           = 1     # 1 byte
 LPP_ANALOG_INPUT             = 2     # 2 bytes, 0.01 signed
 LPP_ANALOG_OUTPUT            = 3     # 2 bytes, 0.01 signed
-LPP_GENERIC_SENSOR           = 100   # 4 bytes, unsigned
-LPP_LUMINOSITY               = 101   # 2 bytes, 1 lux unsigned
-LPP_PRESENCE                 = 102   # 1 byte, bool
-LPP_TEMPERATURE              = 103   # 2 bytes, 0.1°C signed
-LPP_RELATIVE_HUMIDITY        = 104   # 1 byte, 0.5% unsigned
-LPP_ACCELEROMETER            = 113   # 2 bytes per axis, 0.001G
-LPP_BAROMETRIC_PRESSURE      = 115   # 2 bytes 0.1hPa unsigned
-LPP_VOLTAGE                  = 116   # 2 bytes 0.01V unsigned
-LPP_CURRENT                  = 117   # 2 bytes 0.001A unsigned
-LPP_FREQUENCY                = 118   # 4 bytes 1Hz unsigned
-LPP_PERCENTAGE               = 120   # 1 byte 1-100% unsigned
-LPP_ALTITUDE                 = 121   # 2 byte 1m signed
-LPP_POWER                    = 128   # 2 byte, 1W, unsigned
-LPP_DISTANCE                 = 130   # 4 byte, 0.001m, unsigned
-LPP_ENERGY                   = 131   # 4 byte, 0.001kWh, unsigned
-LPP_DIRECTION                = 132   # 2 bytes, 1deg, unsigned
-LPP_UNIXTIME                 = 133   # 4 bytes, unsigned
-LPP_GYROMETER                = 134   # 2 bytes per axis, 0.01 °/s
-LPP_GPS                      = 136   # 3 byte lon/lat 0.0001 °, 3 bytes alt 0.01 meter
-LPP_SWITCH                   = 142   # 1 byte, 0/1
+LPP_GENERIC_SENSOR           = 4     # 4 bytes, unsigned (100)
+LPP_LUMINOSITY               = 5     # 2 bytes, 1 lux unsigned
+LPP_PRESENCE                 = 6     # 1 byte, bool
+LPP_TEMPERATURE              = 7     # 2 bytes, 0.1°C signed
+LPP_RELATIVE_HUMIDITY        = 8     # 1 byte, 0.5% unsigned
+LPP_ACCELEROMETER            = 9     # 2 bytes per axis, 0.001G
+LPP_BAROMETRIC_PRESSURE      = 10    # 2 bytes 0.1hPa unsigned
+LPP_VOLTAGE                  = 11    # 2 bytes 0.01V unsigned
+LPP_CURRENT                  = 12    # 2 bytes 0.001A unsigned
+LPP_FREQUENCY                = 13    # 4 bytes 1Hz unsigned
+LPP_PERCENTAGE               = 14    # 1 byte 1-100% unsigned
+LPP_ALTITUDE                 = 15    # 2 byte 1m signed
+LPP_POWER                    = 16    # 2 byte, 1W, unsigned
+LPP_DISTANCE                 = 17    # 4 byte, 0.001m, unsigned
+LPP_ENERGY                   = 18    # 4 byte, 0.001kWh, unsigned
+LPP_DIRECTION                = 19    # 2 bytes, 1deg, unsigned
+LPP_UNIXTIME                 = 20    # 4 bytes, unsigned
+LPP_GYROMETER                = 21    # 2 bytes per axis, 0.01 °/s
+LPP_GPS                      = 21    # 3 byte lon/lat 0.0001 °, 3 bytes alt 0.01 meter
+LPP_SWITCH                   = 23    # 1 byte, 0/1
+LPP_TEXT                     = 24    # 20 byte
 
 # Only Data Size
 LPP_DIGITAL_INPUT_SIZE       = 1
@@ -58,6 +59,7 @@ LPP_UNIXTIME_SIZE            = 4
 LPP_GYROMETER_SIZE           = 6
 LPP_GPS_SIZE                 = 9
 LPP_SWITCH_SIZE              = 1
+LPP_TEXT_SIZE                = None #00 is end
 
 # Multipliers
 LPP_DIGITAL_INPUT_MULT         = 1
@@ -85,6 +87,7 @@ LPP_GYROMETER_MULT             = 100
 LPP_GPS_LAT_LON_MULT           = 10000
 LPP_GPS_ALT_MULT               = 100
 LPP_SWITCH_MULT                = 1
+LPP_TEXT_MULT                  = None
 
 LPP_ERROR_OK                    = 0
 LPP_ERROR_OVERFLOW              = 1
@@ -294,6 +297,25 @@ class LPP:
             self.buffer.extend(struct.pack('b', LPP_BATTERY_LEVEL + 0x80 ))
         self.buffer.extend(struct.pack('b', value))
 
+    def add_battery_level(self, channel, value):
+
+        if channel > 0 :
+            self.buffer.extend(struct.pack('b', LPP_BATTERY_LEVEL))
+            self.buffer.extend(struct.pack('b', channel))
+        else:
+            self.buffer.extend(struct.pack('b', LPP_BATTERY_LEVEL + 0x80 ))
+        self.buffer.extend(struct.pack('b', value))
+
+    def add_text(self, channel, value):
+        val = value[:16] # size max= 16
+        if channel > 0 :
+            self.buffer.extend(struct.pack('b', LPP_TEXT))
+            self.buffer.extend(struct.pack('b', channel))
+        else:
+            self.buffer.extend(struct.pack('b', LPP_TEXT + 0x80 ))
+        self.buffer.extend(struct.pack('b',len(value)))
+        self.buffer.extend(value)
+
     def decode(self, buffer):
         count = 0
         index = 0
@@ -301,17 +323,25 @@ class LPP:
         datas=[]
         while ((index + 2) < bufferSize):
             count +=1
-            # Get channel #
-            channel = buffer[index]
-            index +=1
             # Get data type
             type = buffer[index]
             index +=1
+            if type >=0x80 :
+                type = type - 0x80
+                channel = 0x00
+            else:
+                # Get channel #
+                channel = buffer[index]
+                index +=1
+
             if (not self._isType(type)):
                 _error = LPP_ERROR_UNKOWN_TYPE
                 return 0
             # Type definition
             size = self._getTypeSize(type)
+            if size == None :
+                 size = buffer[index]
+                 index +=1
             multiplier = self._getTypeMultiplier(type)
             is_signed = self._getTypeSigned(type)
 
@@ -339,6 +369,8 @@ class LPP:
                 valuedict["longitude"] = self._getValue(buffer[index+3:index+6], 10000, is_signed)
                 valuedict["altitude"] = self._getValue(buffer[index+6:index+9], 100, is_signed)
                 data["value"]  = valuedict
+            elif (LPP_TEXT == type):
+                 data["value"] = buffer[index:index+size]
             else:
                  data["value"] = self._getValue(buffer[index:index+size], multiplier, is_signed)
             datas.append(data)
@@ -370,6 +402,7 @@ class LPP:
         if (LPP_GYROMETER == type) : return True
         if (LPP_GPS == type) : return True
         if (LPP_SWITCH == type) : return True
+        if (LPP_TEXT == type) : return True
         return False
 
     def _getTypeSize(self, type):
@@ -397,6 +430,7 @@ class LPP:
         if (LPP_GYROMETER == type) : return LPP_GYROMETER_SIZE
         if (LPP_GPS == type) : return LPP_GPS_SIZE
         if (LPP_SWITCH == type) : return LPP_SWITCH_SIZE
+        if (LPP_TEXT == type) : return LPP_TEXT_SIZE
         return 0
 
     def _getTypeMultiplier(self, type) :
@@ -475,6 +509,7 @@ class LPP:
     	if (LPP_GYROMETER == type):  return "gyrometer"
     	if (LPP_GPS == type):  return "gps"
     	if (LPP_SWITCH == type):  return "switch"
+        if (LPP_TEXT == type):  return "text"
     	return 0
 
 if __name__ == '__main__' :
@@ -483,4 +518,6 @@ if __name__ == '__main__' :
     #buffer= bytearray([0x01,0x88,0x06,0x76,0x5f,0xf2,0x96,0x0a,0x00,0x03,0xe8])
     #buffer= bytearray([0x01,0x01,0x01])
     #print(myLPP.decode(buffer))
-    myLPP.add_digital_input(0,1)
+    myLPP.add_text(1,"rrr")
+    print(myLPP.get_buffer())
+    print(myLPP.decode(myLPP.get_buffer()))
