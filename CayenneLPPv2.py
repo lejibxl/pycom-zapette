@@ -7,6 +7,8 @@ version : 2019-09-11
 
 import struct
 import math
+import logging.logging as logging
+l = logging.getLogger(__name__)
 
 LPP_DIGITAL_INPUT            = 0     # 1 byte
 LPP_DIGITAL_OUTPUT           = 1     # 1 byte
@@ -33,6 +35,7 @@ LPP_GYROMETER                = 21    # 2 bytes per axis, 0.01 °/s
 LPP_GPS                      = 21    # 3 byte lon/lat 0.0001 °, 3 bytes alt 0.01 meter
 LPP_SWITCH                   = 23    # 1 byte, 0/1
 LPP_TEXT                     = 24    # 20 byte
+LPP_BATTERY_LEVEL            = 25    # 1 byte en %
 
 # Only Data Size
 LPP_DIGITAL_INPUT_SIZE       = 1
@@ -59,7 +62,8 @@ LPP_UNIXTIME_SIZE            = 4
 LPP_GYROMETER_SIZE           = 6
 LPP_GPS_SIZE                 = 9
 LPP_SWITCH_SIZE              = 1
-LPP_TEXT_SIZE                = None #00 is end
+LPP_TEXT_SIZE                = None
+LPP_BATTERY_LEVEL_SIZE       = 1
 
 # Multipliers
 LPP_DIGITAL_INPUT_MULT         = 1
@@ -88,6 +92,7 @@ LPP_GPS_LAT_LON_MULT           = 10000
 LPP_GPS_ALT_MULT               = 100
 LPP_SWITCH_MULT                = 1
 LPP_TEXT_MULT                  = None
+LPP_BATTERY_LEVEL_MULT         = 1
 
 LPP_ERROR_OK                    = 0
 LPP_ERROR_OVERFLOW              = 1
@@ -135,7 +140,6 @@ class LPP:
 
         # update & return _cursor
         return size
-
 
     def add_temperature(self, channel, value):
         val = math.floor(value * 10)
@@ -297,15 +301,6 @@ class LPP:
             self.buffer.extend(struct.pack('b', LPP_BATTERY_LEVEL + 0x80 ))
         self.buffer.extend(struct.pack('b', value))
 
-    def add_battery_level(self, channel, value):
-
-        if channel > 0 :
-            self.buffer.extend(struct.pack('b', LPP_BATTERY_LEVEL))
-            self.buffer.extend(struct.pack('b', channel))
-        else:
-            self.buffer.extend(struct.pack('b', LPP_BATTERY_LEVEL + 0x80 ))
-        self.buffer.extend(struct.pack('b', value))
-
     def add_text(self, channel, value):
         val = value[:16] # size max= 16
         if channel > 0 :
@@ -382,7 +377,7 @@ class LPP:
         if (LPP_DIGITAL_OUTPUT == type) : return True
         if (LPP_ANALOG_INPUT == type) : return True
         if (LPP_ANALOG_OUTPUT == type) : return True
-        #if (LPP_GENERIC_SENSOR == type) : return True
+        if (LPP_GENERIC_SENSOR == type) : return True
         if (LPP_LUMINOSITY == type) : return True
         if (LPP_PRESENCE == type) : return True
         if (LPP_TEMPERATURE == type) : return True
