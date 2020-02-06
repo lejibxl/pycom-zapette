@@ -70,7 +70,7 @@ LPP_DIGITAL_INPUT_MULT         = 1
 LPP_DIGITAL_OUTPUT_MULT        = 1
 LPP_ANALOG_INPUT_MULT          = 100
 LPP_ANALOG_OUTPUT_MULT         = 100
-LPP_GENERIC_SENSOR_MULT        = 1
+LPP_GENERIC_SENSOR_MULT        = None
 LPP_LUMINOSITY_MULT            = 1
 LPP_PRESENCE_MULT              = 1
 LPP_TEMPERATURE_MULT           = 10
@@ -114,32 +114,36 @@ class LPP:
         return len(self.buffer)
 
     def addField(self, type, channel, value) :
-
          # Check type
+        buf=bytearray()
         if (not self._isType(type)):
-            _error = LPP_ERROR_UNKOWN_TYPE
+            l.error(LPP_ERROR_UNKOWN_TYPE)
             return 0
-
-        # Type definition
         size = self._getTypeSize(type)
-        multiplier = self._getTypeMultiplier(type)
-        is_signed = self._getTypeSigned(type)
+        if (type == LPP_GENERIC_SENSOR):
+             buf =struct.pack('I', value)
+        else:
+            # Type definition
+            multiplier = self._getTypeMultiplier(type)
+            is_signed = self._getTypeSigned(type)
 
-        # get value to store
-        v = math.floor(value * multiplier)
+            # get value to store
+            v = math.floor(value * multiplier)
 
+            # add bytes (MSB first)
+            for i in range(0,size):
+                buf.extend(struct.pack('b',(v & 0xFF)))
+                v = v >> 8
+                #v = long(v / 256)
         # header
         self.buffer.extend(struct.pack('b', type))
         self.buffer.extend(struct.pack('b', channel))
 
-        # add bytes (MSB first)
-        for i in range(0,size):
-            self.buffer.extend(struct.pack('b',(v & 0xFF)))
-            v = v >> 8
-            #v = long(v / 256)
-
+        #add data
+        self.buffer.extend(buf)
         # update & return _cursor
         return size
+
 
     def add_temperature(self, channel, value):
         val = math.floor(value * 10)
@@ -366,6 +370,8 @@ class LPP:
                 data["value"]  = valuedict
             elif (LPP_TEXT == type):
                  data["value"] = buffer[index:index+size]
+            elif (LPP_GENERIC_SENSOR == type):
+                 data["value"] = struct.unpack('I',buffer[index:index+size])
             else:
                  data["value"] = self._getValue(buffer[index:index+size], multiplier, is_signed)
             datas.append(data)
@@ -476,8 +482,7 @@ class LPP:
     		if ((value & bit) == bit) :
     			value = (bit << 1) - value
     			sign = -1
-
-    	return sign * (float(value / multiplier))
+        return sign * (float(value / multiplier))
 
     def _getTypeName(self, type) :
     	if (LPP_DIGITAL_INPUT == type):  return "digital_input"
@@ -513,6 +518,7 @@ if __name__ == '__main__' :
     #buffer= bytearray([0x01,0x88,0x06,0x76,0x5f,0xf2,0x96,0x0a,0x00,0x03,0xe8])
     #buffer= bytearray([0x01,0x01,0x01])
     #print(myLPP.decode(buffer))
-    myLPP.add_text(1,"rrr")
+    myLPP.addField(LPP_GENERIC_SENSOR,0,0xF1 * 256 + 0x1F)
     print(myLPP.get_buffer())
     print(myLPP.decode(myLPP.get_buffer()))
+    print(int())
