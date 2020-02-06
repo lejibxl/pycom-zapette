@@ -371,7 +371,7 @@ class LPP:
             elif (LPP_TEXT == type):
                  data["value"] = buffer[index:index+size]
             elif (LPP_GENERIC_SENSOR == type):
-                 data["value"] = struct.unpack('I',buffer[index:index+size])
+                 data["value"] = struct.unpack('I',buffer[index:index+size])[0]
             else:
                  data["value"] = self._getValue(buffer[index:index+size], multiplier, is_signed)
             datas.append(data)
