@@ -8,6 +8,7 @@ import struct
 import logging.logging as logging
 #from zapette.zapette_handler import ZapetteHandler
 l = logging.getLogger(__name__)
+l.setLevel(logging.ERROR)
 class Zapette:
     def __init__(self, device_id, handler_rx=None, handler_tx=None ):
         #.addHandler(ZapetteHandler("self"),2)
