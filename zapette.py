@@ -1,5 +1,5 @@
 import uos
-import zapette.CayenneLPPv2 as CayenneLPPv2
+import zapette.zapetteLPP as zapetteLPP
 import utime
 from network import LoRa
 import socket
@@ -17,7 +17,7 @@ class Zapette:
         self._user_handler_tx  = handler_tx
         n=uos.urandom(2)
         self.frame_cnt = n[0] + n[1]*256
-        self.lpp=CayenneLPPv2.LPP()
+        self.lpp=zapetteLPP.LPP()
         # initialise LoRa in LORA mode
         self.lora = LoRa(mode=LoRa.LORA,
                     region=LoRa.EU868,
@@ -149,8 +149,8 @@ def test_tx(retries):
 
 if __name__ == '__main__':
     zapette=Zapette(0x02,handler_rx=test_rx,handler_tx=test_tx)
-    lpp=CayenneLPPv2.LPP()
+    lpp=zapetteLPP.LPP()
     while True:
         lpp.add_digital_input(0,1)
         print(zapette.send_frame_TX(0x01, lpp))
-        utime.sleep(10)
+        utime.sleep(1)
