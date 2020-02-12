@@ -80,6 +80,9 @@ class LPP:
     def get_buffer(self):
         return self.buffer
 
+    def get_size(self):
+        return len(self.buffer)
+
     def reset(self):
         self.buffer = bytearray()
 
