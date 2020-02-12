@@ -8,7 +8,6 @@ import struct
 import logging.logging as logging
 #from zapette.zapette_handler import ZapetteHandler
 l = logging.getLogger(__name__)
-l.setLevel(logging.ERROR)
 class Zapette:
     def __init__(self, device_id, handler_rx=None, handler_tx=None ):
         #.addHandler(ZapetteHandler("self"),2)
@@ -60,8 +59,8 @@ class Zapette:
 
             l.debug("device_from:{} ,device_to:{} ,frame_type:{}, frame_cnt:{}, crc:{}, payload:{}".format(device_from,device_to,frame_type,frame_cnt,crc,payload))
             if device_to == self.device_id :
-                if frame_type ==  b'\x00' : #RX
-                    l.debug("FRAME RX")
+                if frame_type ==  b'\x00' : #RX w/ ACK
+                    l.debug("FRAME RX w/ ACK")
                     self._send_frame_ACK(device_from, frame_cnt, stats, b'\x01')
                     if self._user_handler_rx is not None:
                         lpp_rx=self.lpp.decode(payload)
@@ -69,7 +68,15 @@ class Zapette:
                             self._user_handler_rx(lpp_rx,{'rssi':stats.rssi,'snr':stats.snr})
                     else:
                         l.debug("no Handler")
-                elif frame_type ==  b'\x01' : #ACK
+                elif frame_type ==  b'\x01' : #RX w/o ACK
+                    l.debug("FRAME RX w/o ACK")
+                    if self._user_handler_rx is not None:
+                        lpp_rx=self.lpp.decode(payload)
+                        if lpp_rx != None:
+                            self._user_handler_rx(lpp_rx,{'rssi':stats.rssi,'snr':stats.snr})
+                    else:
+                        l.debug("no Handler")
+                elif frame_type ==  b'\x10' : #ACK
                     l.debug("FRAME ACK")
                     #tmp = struct.unpack("bhf",payload) Bug
                     status =  payload[0]
@@ -90,7 +97,7 @@ class Zapette:
     def _send_frame_ACK(self, device_to, frame_cnt, stats, status):
         device_from = self.device_id
         device_to = device_to
-        frame_type =  b'\x01'
+        frame_type =  b'\x10'
         frame_cnt = frame_cnt
         rssi = stats.rssi
         snr = stats.snr
@@ -100,28 +107,31 @@ class Zapette:
         l.debug("tx : {}".format(ubinascii.hexlify(tx_frame)))
         self.lora_sock.send(tx_frame)
 
-    def send_frame_TX(self, device_to,msg):
+    def send_frame_TX(self, device_to,msg, ack = True ):
         device_from = self.device_id
         device_to = bytes([device_to])
-        frame_type =  b'\x00'
+        frame_type =  b'\x00' if ack == True else b'\x01'
         frame_cnt = b'\x00\x01'
         payload = msg.get_buffer()
         crc = b'\x00'
         msg.reset()
         tx_frame = self.device_id + device_to + frame_type + frame_cnt + payload + crc
-        l.debug("tx : {}".format(ubinascii.hexlify(tx_frame)))
-        self.frame_ACK = None
-        for i in range(0,self.tx_retries):
+        l.debug("tx: {}, ack: {}".format(ubinascii.hexlify(tx_frame),ack))
+        if ack == True:
+            self.frame_ACK = None
+            for i in range(0,self.tx_retries):
+                self.lora_sock.send(tx_frame)
+                ticks_sign = utime.ticks_diff(1, 2) # get the sign of ticks_diff, e.g. in init code.
+                deadline = utime.ticks_add(utime.ticks_ms(), self.tx_timeout)
+                if self._user_handler_tx is not None:
+                    self._user_handler_tx(i)
+                while (utime.ticks_diff(deadline, utime.ticks_ms()) * ticks_sign) < 0:
+                    if self.frame_ACK == frame_cnt:
+                        l.debug("tx OK")
+                        return self.frame_ACK_stats
+                l.debug("tx NOK {}/{}".format(i+1,self.tx_retries))
+        else:
             self.lora_sock.send(tx_frame)
-            ticks_sign = utime.ticks_diff(1, 2) # get the sign of ticks_diff, e.g. in init code.
-            deadline = utime.ticks_add(utime.ticks_ms(), self.tx_timeout)
-            if self._user_handler_tx is not None:
-                self._user_handler_tx(i)
-            while (utime.ticks_diff(deadline, utime.ticks_ms()) * ticks_sign) < 0:
-                if self.frame_ACK == frame_cnt:
-                    l.debug("tx OK")
-                    return self.frame_ACK_stats
-            l.debug("tx NOK {}/{}".format(i+1,self.tx_retries))
         return None
 
 def test_rx(lpp_rx,stats):
@@ -138,9 +148,9 @@ def test_tx(retries):
     print(retries)
 
 if __name__ == '__main__':
-    zapette=Zapette(0x01,handler_rx=test_rx,handler_tx=test_tx)
+    zapette=Zapette(0x02,handler_rx=test_rx,handler_tx=test_tx)
     lpp=CayenneLPPv2.LPP()
-    lpp.add_digital_input(0,1)
-    print(zapette.send_frame_TX(0x01, lpp))
     while True:
-        pass
+        lpp.add_digital_input(0,1)
+        print(zapette.send_frame_TX(0x01, lpp))
+        utime.sleep(10)
