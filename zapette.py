@@ -151,6 +151,6 @@ if __name__ == '__main__':
     zapette=Zapette(0x02,handler_rx=test_rx,handler_tx=test_tx)
     lpp=zapetteLPP.LPP()
     while True:
-        lpp.add_digital_input(0,1)
+        #lpp.add_digital_input(0,1)
         print(zapette.send_frame_TX(0x01, lpp))
         utime.sleep(1)
