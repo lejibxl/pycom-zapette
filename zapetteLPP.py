@@ -10,35 +10,9 @@ import math
 import logging.logging as logging
 l = logging.getLogger(__name__)
 
-LPP_DIGITAL_INPUT            = 0     # 1 byte
-LPP_DIGITAL_OUTPUT           = 1     # 1 byte
-LPP_ANALOG_INPUT             = 2     # 2 bytes, 0.01 signed
-LPP_ANALOG_OUTPUT            = 3     # 2 bytes, 0.01 signed
-LPP_GENERIC_SENSOR           = 4     # 4 bytes, unsigned (100)
-LPP_LUMINOSITY               = 5     # 2 bytes, 1 lux unsigned
-LPP_PRESENCE                 = 6     # 1 byte, bool
-LPP_TEMPERATURE              = 7     # 2 bytes, 0.1°C signed
-LPP_RELATIVE_HUMIDITY        = 8     # 1 byte, 0.5% unsigned
-LPP_ACCELEROMETER            = 9     # 2 bytes per axis, 0.001G
-LPP_BAROMETRIC_PRESSURE      = 10    # 2 bytes 0.1hPa unsigned
-LPP_VOLTAGE                  = 11    # 2 bytes 0.01V unsigned
-LPP_CURRENT                  = 12    # 2 bytes 0.001A unsigned
-LPP_FREQUENCY                = 13    # 4 bytes 1Hz unsigned
-LPP_PERCENTAGE               = 14    # 1 byte 1-100% unsigned
-LPP_ALTITUDE                 = 15    # 2 byte 1m signed
-LPP_POWER                    = 16    # 2 byte, 1W, unsigned
-LPP_DISTANCE                 = 17    # 4 byte, 0.001m, unsigned
-LPP_ENERGY                   = 18    # 4 byte, 0.001kWh, unsigned
-LPP_DIRECTION                = 19    # 2 bytes, 1deg, unsigned
-LPP_UNIXTIME                 = 20    # 4 bytes, unsigned
-LPP_GYROMETER                = 21    # 2 bytes per axis, 0.01 °/s
-LPP_GPS                      = 21    # 3 byte lon/lat 0.0001 °, 3 bytes alt 0.01 meter
-LPP_SWITCH                   = 23    # 1 byte, 0/1
-LPP_TEXT                     = 24    # 20 byte
-LPP_BATTERY_LEVEL            = 25    # 1 byte en %
-
 # Only Data Size
 LPP_Dict = [
+    {'ID':0x09,    'name':'LPP_CMD_REFRESH',         'format': '!B'},
     {'ID':0x10,    'name':'LPP_DIGITAL_INPUT',       'format': '!B'},            # 1 byte
     {'ID':0x11,    'name':'LPP_DIGITAL_OUTPUT',      'format': '!B'},           # 1 byte
     {'ID':0x12,    'name':'LPP_ANALOG_INPUT',        'format': '!h'},           # 2 bytes, 0.01 signed

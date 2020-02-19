@@ -8,6 +8,7 @@ import struct
 import logging.logging as logging
 #from zapette.zapette_handler import ZapetteHandler
 l = logging.getLogger(__name__)
+l.setLevel(logging.INFO)
 class Zapette:
     def __init__(self, device_id, handler_rx=None, handler_tx=None ):
         #.addHandler(ZapetteHandler("self"),2)
@@ -147,7 +148,7 @@ def test_rx(lpp_rx,stats):
 def test_tx(retries):
     print(retries)
 
-if __name__ == '__main__':
+if __name__ == '__main__' and 2 == 1:
     zapette=Zapette(0x02,handler_rx=test_rx,handler_tx=test_tx)
     lpp=zapetteLPP.LPP()
     while True:
