@@ -112,7 +112,7 @@ class LPP:
         index = 0
         bufferSize=len(buffer)
         datas=[]
-        while ((index + 2) < bufferSize):
+        while ((index + 1) < bufferSize):
             count +=1
             # Get data type
             type = buffer[index]
@@ -164,7 +164,8 @@ if __name__ == '__main__' :
     #buffer= bytearray([0x01,0x01,0x01])
     #print(myLPP.decode(buffer))
     #myLPP.addField(LPP_GENERIC_SENSOR,0,0xF1 * 256 + 0x1F)
-    myLPP.addField("LPP_POWER",0,60)
-    print(myLPP.get_buffer())
-    print(myLPP.decode(myLPP.get_buffer()))
-    print(int())
+    #myLPP.addField("LPP_POWER",0,60)
+    #print(myLPP.get_buffer())
+    #print(myLPP.decode(myLPP.get_buffer()))
+    print(myLPP.decode(b'\x89\x00'))
+    #print(int())
